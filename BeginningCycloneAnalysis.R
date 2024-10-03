@@ -119,9 +119,14 @@ View(partially_complete_rows)
 
 # Partially complete rows have data in all variables
 
-#
-#
-#
+
+
+
+
+
+
+
+
 
 post_cyclone = read_dta("C:/Users/abdul/Desktop/ID Assistantship/ID Assistantship/post_cyclone_followup.dta")
 str(post_cyclone)
@@ -142,19 +147,123 @@ table(post_cyclone$interview_completed)
 
 # 5,218 completed interviews, 5,218 obs. in post_cyclone
 
-#
-#
-#
-#
 
-str(post_cyclone)
 
+
+
+
+# Creating a data set containing individuals who were interviewed before and after
 # Inner join based on caseid
-merged_data <- pre_cyclone %>%
+interviewed_before_and_after <- pre_cyclone %>%
   inner_join(post_cyclone, by = "caseid")
 
 # Check the number of observations
-nrow(merged_data)
+nrow(interviewed_before_and_after)
 # This will return the number of rows where 'caseid' exists in both data sets
+
+
+
+
+
+
+
+# Creating new variable to indicate if reinterviewed
+# Left join to keep all individuals from pre-cyclone data
+merged_data <- pre_cyclone %>%
+  left_join(post_cyclone, by = "caseid")
+
+# Check the number of observations
+nrow(merged_data)
+
+# Create a new variable 'reinterviewed' based on non-missing values in 'starttime', 'endtime', and 'submissiondate'
+merged_data <- merged_data %>%
+  mutate(reinterviewed = ifelse(!is.na(starttime) & !is.na(endtime) & !is.na(submissiondate), 
+                                "Reinterviewed", "Not Reinterviewed"))
+
+# Check the distribution of reinterviewed vs not reinterviewed
+table(merged_data$reinterviewed)
+# Not Reinterviewed: 3,690
+# Reinterviewed: 5,218
+# Reinterviewed number matches number of rows in post-cyclone dataset 
+
+
+# Check if any reinterviewed individuals have missing values for 'starttime', 'endtime', or 'submissiondate'
+reinterviewed_check <- merged_data %>%
+  filter(reinterviewed == "Reinterviewed") %>%
+  summarise(missing_starttime = sum(is.na(starttime)),
+            missing_endtime = sum(is.na(endtime)),
+            missing_submissiondate = sum(is.na(submissiondate)))
+
+
+# Add both text and binary versions of the 'reinterviewed' variable
+merged_data <- merged_data %>%
+  mutate(reinterviewed_text = ifelse(!is.na(starttime) & !is.na(endtime) & !is.na(submissiondate), 
+                                     "Reinterviewed", "Not Reinterviewed"),
+         reinterviewed_binary = ifelse(!is.na(starttime) & !is.na(endtime) & !is.na(submissiondate), 1, 0))
+
+# Check the distribution
+table(merged_data$reinterviewed_binary)
+# 1 for reinterviewed, 0 for not reinterviewed
+
+merged_data <- merged_data %>%
+  select(-reinterviewed)
+
+table(merged_data$pre_GO)
+
+
+
+# Create custom numeric age categories
+merged_data <- merged_data %>%
+  mutate(age_category_numeric = cut(pre_age, 
+                                    breaks = c(18, 24, 34, 44, 54, 64, Inf), 
+                                    labels = c(1, 2, 3, 4, 5, 6),  # Numeric labels
+                                    right = FALSE))
+
+# Check the distribution of the numeric age categories
+table(merged_data$age_category_numeric)
+# age_category_numeric contains the age ranges
+# 1 = 18-24, 2 = 25-34, 3 = 35-44, 4 = 45-54, 5 = 55-64, 6 = 65+
+
+# Visualizing 
+# Create a bar plot to visualize the age distribution by reinterview status
+ggplot(merged_data, aes(x = factor(age_category_numeric), fill = factor(reinterviewed_binary))) +
+  geom_bar(position = "dodge") +  # Side-by-side bars for each category
+  labs(title = "Age Distribution by Reinterview Status",
+       x = "Age Category",
+       y = "Count",
+       fill = "Reinterviewed (1 = Yes, 0 = No)") +
+  scale_x_discrete(labels = c("1" = "18-24", "2" = "25-34", "3" = "35-44", "4" = "45-54", "5" = "55-64", "6" = "65+")) +
+  theme_minimal() +  # Clean plot theme
+  theme(plot.title = element_text(hjust = 0.5))  # Center the title
+
+
+
+
+# Step 1: Summarize the age distribution by reinterview status
+age_summary <- merged_data %>%
+  group_by(reinterviewed_binary, age_category_numeric) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = count / sum(count) * 100)
+
+# Print the summarized age distribution
+print(age_summary)
+
+
+
+# Step 2: Create a contingency table for the chi-square test
+age_table <- table(merged_data$age_category_numeric, merged_data$reinterviewed_binary)
+
+# Perform Chi-square test to compare age distribution across reinterview status
+chi_square_test <- chisq.test(age_table)
+
+# Print the result of the chi-square test
+print(chi_square_test)
+
+# P-value is extremely small (essentially zero) thus we reject the null hyp
+# Thus, the age distribution is significantly different between those who
+# were re-interviewed, and those who were not 
+
+
+
 
 
