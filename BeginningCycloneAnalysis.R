@@ -10,6 +10,7 @@ library(labelled)   # Use Stata metadata
 # Data visualization
 library(ggplot2)    # Graphs & plots
 library(ggpubr)     # Publication-ready plots
+library(ggmosaic)
 
 # Stats & models
 library(stats)      # Basic stats
@@ -254,10 +255,10 @@ print(age_summary)
 age_table <- table(merged_data$age_category_numeric, merged_data$reinterviewed_binary)
 
 # Perform Chi-square test to compare age distribution across reinterview status
-chi_square_test <- chisq.test(age_table)
+chi_square_test_age <- chisq.test(age_table)
 
 # Print the result of the chi-square test
-print(chi_square_test)
+print(chi_square_test_age)
 
 # P-value is extremely small (essentially zero) thus we reject the null hyp
 # Thus, the age distribution is significantly different between those who
@@ -266,4 +267,224 @@ print(chi_square_test)
 
 
 
+# Analysis now for sex of the respondent
+look_for(merged_data, "sex")
+# Step 1: Summarize the distribution of sex by reinterview status
+sex_summary <- merged_data %>%
+  group_by(reinterviewed_binary, pre_sex) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = count / sum(count) * 100)
+
+# Print the summarized sex distribution
+print(sex_summary)
+
+
+# Step 2: Create a contingency table for the chi-square test
+sex_table <- table(merged_data$pre_sex, merged_data$reinterviewed_binary)
+
+# Perform Chi-square test to compare sex distribution across reinterview status
+chi_square_test_sex <- chisq.test(sex_table)
+
+# Print the result of the chi-square test
+print(chi_square_test_sex)
+
+# The chi-square test (X-squared = 23.989, p-value = 9.686e-07) shows a statistically
+# significant difference in the distribution of sex between those reinterviewed and
+# those not reinterviewed
+
+
+
+
+
+# Electricity
+look_for(merged_data, "pre_Electricity")
+
+
+
+
+
+# Step 1: Summarize the distribution of electricity access by reinterview status
+electricity_summary <- merged_data %>%
+  group_by(reinterviewed_binary, pre_Electricity) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = count / sum(count) * 100)
+
+# Print the summarized electricity distribution
+print(electricity_summary)
+
+# Step 2: Create a contingency table for the chi-square test
+electricity_table <- table(merged_data$pre_Electricity, merged_data$reinterviewed_binary)
+
+# Perform Chi-square test to compare electricity access across reinterview status
+chi_square_test_electricity <- chisq.test(electricity_table)
+
+# Print the result of the chi-square test
+print(chi_square_test_electricity)
+
+# Step 3: Visualizing the electricity distribution by reinterview status
+ggplot(merged_data, aes(x = factor(pre_Electricity), fill = factor(reinterviewed_binary))) +
+  geom_bar(position = "dodge") +  # Side-by-side bars for each electricity status
+  labs(title = "Electricity Access by Reinterview Status",
+       x = "Electricity Access",
+       y = "Count",
+       fill = "Reinterviewed (1 = Yes, 0 = No)") +
+  scale_x_discrete(labels = c("1" = "Yes", "2" = "No")) +
+  theme_minimal() +  # Clean plot theme
+  theme(plot.title = element_text(hjust = 0.5))  # Center the title
+
+
+# Added plots thus far for electricity access by reinterview status and
+# age distribution by reinterview status
+
+# chi_square_test_electricity results:
+### X-squared = 29.728, df = 1, and p-value = 4.971e-08.
+# The p-value is extremely small, indicating that there is a statistically 
+# significant difference in electricity access between individuals who were
+# reinterviewed and those who were not.
+
+# Thus, those without electricity are more likely to have been reinterviewed
+# compared to those with electricity
+# ?
+
+
+
+# Water
+look_for(merged_data, "pre_Water")
+# 1 = unprotected source
+# 2 = protected source
+
+# Step 1: Summarize the distribution of water source by reinterview status
+water_summary <- merged_data %>%
+  group_by(reinterviewed_binary, pre_Water) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = count / sum(count) * 100)
+
+# Print the summarized water source distribution
+print(water_summary)
+
+# Step 2: Create a contingency table for the chi-square test
+water_table <- table(merged_data$pre_Water, merged_data$reinterviewed_binary)
+
+# Perform Chi-square test to compare water source across reinterview status
+chi_square_test_water <- chisq.test(water_table)
+
+# Print the result of the chi-square test
+print(chi_square_test_water)
+
+# Step 3: Visualizing the water source distribution by reinterview status
+ggplot(merged_data, aes(x = factor(pre_Water), fill = factor(reinterviewed_binary))) +
+  geom_bar(position = "dodge") +  # Side-by-side bars for each water source
+  labs(title = "Water Source by Reinterview Status",
+       x = "Water Source",
+       y = "Count",
+       fill = "Reinterviewed (1 = Yes, 0 = No)") +
+  scale_x_discrete(labels = c("1" = "Unprotected", "2" = "Protected")) +
+  theme_minimal() +  # Clean plot theme
+  theme(plot.title = element_text(hjust = 0.5))  # Center the title
+
+# Simple stacked bar plot
+ggplot(merged_data, aes(x = factor(reinterviewed_binary), fill = factor(pre_Water))) +
+  geom_bar(position = "stack") +  # Standard stacked bar plot
+  labs(title = "Water Source by Reinterview Status",
+       x = "Reinterviewed Status (1 = Yes, 0 = No)",
+       y = "Count",
+       fill = "Water Source") +
+  scale_fill_manual(values = c("#2b83ba", "#d7191c"),  # Simple color palette
+                    labels = c("Unprotected", "Protected")) +
+  theme_minimal() +  # Clean and minimalistic theme
+  theme(plot.title = element_text(hjust = 0.5, size = 16, face = "bold"))  # Centered title
+
+
+
+
+
+
+# Chi-square Test Results:
+# X-squared = 10.927, df = 1, and p-value = 0.0009475.
+# The small p-value indicates a statistically significant difference in the 
+# distribution of water source between those reinterviewed and those not reinterviewed
+
+# Thus, households with protected water sources were significantly more likely
+# to be reinterviewed than those with unprotected sources
+
+
+look_for(merged_data, "pre_UR")
+# 1 = urban
+# 2 = rural
+
+# Step 1: Summarize the distribution of place of residence by reinterview status
+residence_summary <- merged_data %>%
+  group_by(reinterviewed_binary, pre_UR) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = count / sum(count) * 100)
+
+# Print the summarized place of residence distribution
+print(residence_summary)
+
+# Step 2: Create a contingency table for the chi-square test
+residence_table <- table(merged_data$pre_UR, merged_data$reinterviewed_binary)
+
+# Perform Chi-square test to compare place of residence across reinterview status
+chi_square_test_residence <- chisq.test(residence_table)
+
+# Print the result of the chi-square test
+print(chi_square_test_residence)
+
+# Step 3: Visualizing the place of residence distribution by reinterview status
+ggplot(merged_data, aes(x = factor(pre_UR), fill = factor(reinterviewed_binary))) +
+  geom_bar(position = "dodge") +  # Side-by-side bars for each residence type
+  labs(title = "Place of Residence by Reinterview Status",
+       x = "Place of Residence",
+       y = "Count",
+       fill = "Reinterviewed (1 = Yes, 0 = No)") +
+  scale_x_discrete(labels = c("1" = "Urban", "2" = "Rural")) +
+  theme_minimal() +  # Clean plot theme
+  theme(plot.title = element_text(hjust = 0.5))  # Center the title
+
+# p-value is very high - no statistically significant difference
+# in the place of residence between
+# those who were reinterviewed and those who were not
+
+
+look_for(merged_data, "pre_household")
+
+
+# 1 = 0-4 members
+# 2 = 5-8 members
+# 3 = 9+ members
+
+# Step 1: Summarize the distribution of household size by reinterview status
+household_summary <- merged_data %>%
+  group_by(reinterviewed_binary, pre_household) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = count / sum(count) * 100)
+
+# Print the summarized household size distribution
+print(household_summary)
+
+# Step 2: Create a contingency table for the chi-square test
+household_table <- table(merged_data$pre_household, merged_data$reinterviewed_binary)
+
+# Perform Chi-square test to compare household size across reinterview status
+chi_square_test_household <- chisq.test(household_table)
+
+# Print the result of the chi-square test
+print(chi_square_test_household)
+
+# Updated visualization to show percentages
+ggplot(merged_data, aes(x = factor(pre_household), fill = factor(reinterviewed_binary))) +
+  geom_bar(position = "fill") +  # This will scale the bars to show proportions (percentages)
+  labs(title = "Household Size by Reinterview Status (Percentages)",
+       x = "Household Size",
+       y = "Proportion",
+       fill = "Reinterviewed (1 = Yes, 0 = No)") +
+  scale_y_continuous(labels = scales::percent_format()) +  # Convert y-axis to percentages
+  scale_x_discrete(labels = c("1" = "0-4 members", "2" = "5-8 members", "3" = "9+ members")) +
+  theme_minimal() +  # Clean plot theme
+  theme(plot.title = element_text(hjust = 0.5))  # Center the title
+
+
+# Household size seems to have a statistically significant impact on whether
+# individuals were reinterviewed. In particular, households with 5-8 members were
+# more likely to be reinterviewed compared to the other categories
 
